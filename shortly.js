@@ -26,7 +26,7 @@ app.use(express.static(__dirname + '/public'));
 app.use(morgan('dev'));
 app.use(cookieParser());
 app.use(session({
-  secret: 'keyboard cat',
+  secret: 'keyboardcat',
   resave: false,
   saveUninitialized: true
 }));
@@ -102,7 +102,7 @@ app.get('/login', function (req, res) {
 
 app.post('/login', function (req, res) {
   //if username and pw match, create a sess ID and redirect user to homepage (index)
-  new User({username: req.body.username}).fetch().then(function(found) {
+  new User({username: req.body.username, password: req.body.password}).fetch().then(function(found) {
     if (found) {
       //bcrypt code HERE - bcrpytCompare????
 

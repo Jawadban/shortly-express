@@ -3,8 +3,8 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
-var morgan = require('morgan');
-var cookieParser = require('cookie-parser');
+//var morgan = require('morgan');
+//var cookieParser = require('cookie-parser');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -23,8 +23,8 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
-app.use(morgan('dev'));
-app.use(cookieParser());
+//app.use(morgan('dev'));
+//app.use(cookieParser());
 app.use(session({
   secret: 'keyboardcat',
   resave: false,
@@ -39,6 +39,7 @@ app.get('/', function(req, res) {
     res.render('index');
   } else {
     res.redirect('/login');
+    res.render('login');
   }
 });
 
@@ -47,13 +48,19 @@ app.get('/create', function(req, res) {
     res.render('/create');
   } else {
     res.redirect('/login');
+    res.render('login');
   }
 });
 
 app.get('/links', function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
-  });
+  if (!util.checkUser(req)) {
+    res.redirect('/login');
+    //res.render('login');
+  } else {
+    Links.reset().fetch().then(function(links) {
+      res.status(200).send(links.models);
+    });  
+  }
 });
 
 app.post('/links', function(req, res) {
@@ -102,13 +109,14 @@ app.get('/login', function (req, res) {
 
 app.post('/login', function (req, res) {
   //if username and pw match, create a sess ID and redirect user to homepage (index)
+  //select * from User
   new User({username: req.body.username, password: req.body.password}).fetch().then(function(found) {
     if (found) {
       //bcrypt code HERE - bcrpytCompare????
-
+      
     } else {
       console.log(req.body.username);
-      res.redirect('/login');
+      res.redirect('/signup');
     }
   });
 });
@@ -123,16 +131,33 @@ app.get('/signup', function (req, res) {
 });
 
 app.post('/signup', function (req, res) {
+  new User({username: req.body.username, password: req.body.password}).then(function(found) {
+    //user is already taken!
+    if (found) {
+      console.log('User exists already');
+    } else {
+      //take in form data info for 'username' and 'password'
+      var newUser = new User({
+        username: req.body.username, 
+        password: req.body.password
+      });
 
+      newUser.save().then(function(newUser) {
+        //ADD newUSER to the 
+        //'USERS' collection that is based on the 'USER' MODEL
+        Users.add(newUser);
+        req.session.user = newUser;
+        res.redirect('/');
+      });
+    }
+  });
 });
 
 //LogOUT
 app.get('/logout', function (req, res) {
+  res.redirect('/');
+  res.render('index');
   console.log('Logging Out User !');
-});
-
-app.post('/logout', function (req, res) {
-  
 });
 
 /************************************************************/

@@ -108,12 +108,22 @@ app.get('/login', function (req, res) {
 });
 
 app.post('/login', function (req, res) {
+  var password = req.body.password;
+
   //if username and pw match, create a sess ID and redirect user to homepage (index)
   //select * from User
-  new User({username: req.body.username, password: req.body.password}).fetch().then(function(found) {
+  new User({username: req.body.username/*, password: req.body.password*/}).fetch().then(function(found) {
     if (found) {
       //bcrypt code HERE - bcrpytCompare????
-      
+      bcrypt.compare(password, found.get('password'), function(err, match) {
+        if (match) {
+          req.session.user = found;
+          res.redirect('/');
+        } else {
+          res.end('Bad username or password!');
+        }
+
+      });
     } else {
       console.log(req.body.username);
       res.redirect('/signup');
@@ -131,11 +141,23 @@ app.get('/signup', function (req, res) {
 });
 
 app.post('/signup', function (req, res) {
-  new User({username: req.body.username, password: req.body.password}).then(function(found) {
+  //select * from User where username = 'username (entered on the form in '/signup' page' 
+  new User({username: req.body.username/*, password: req.body.password*/}).fetch().then(function(found) {
     //user is already taken!
+    res.redirect('/signup');
     if (found) {
       console.log('User exists already');
     } else {
+
+      var passWord = req.body.password;
+      console.log('Entered Password: ', passWord);
+
+      bcrypt.hash(passWord, null, null, function (err, hash) {
+        //store hash in password db
+        passWord = hash;
+        console.log('Hashed password is: ', passWord);
+      });
+
       //take in form data info for 'username' and 'password'
       var newUser = new User({
         username: req.body.username, 
